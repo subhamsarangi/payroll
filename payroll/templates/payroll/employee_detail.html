@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ employee.name }} - Details</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+        th, td { border: 1px solid #000; padding: 5px; text-align: left; vertical-align: top; }
+        .btn {
+            display: inline-block;
+            padding: 5px 10px;
+            background: #007BFF;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 3px;
+            margin-bottom: 10px;
+        }
+        ul { list-style-type: none; padding: 0; margin: 0; }
+    </style>
+</head>
+<body>
+    <h1>{{ employee.name }} ({{ employee.employee_id }})</h1>
+    
+    <h2>Salary Structure History</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Effective Date</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Components</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for structure in salary_structures %}
+                <tr>
+                    <td>{{ structure.effective_date }}</td>
+                    <td>{{ structure.description|default:"-" }}</td>
+                    <td>{% if structure.is_active %}Active{% else %}Inactive{% endif %}</td>
+                    <td>
+                        <ul>
+                        {% for line in structure.lines.all %}
+                            <li>{{ line.salary_component.name }}: {{ line.amount }}{% if line.salary_component.is_percentage %}%{% endif %}</li>
+                        {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="4">No salary structure records found.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <h2>Monthly Salaries</h2>
+    <!-- Button to generate monthly salary -->
+    <p>
+        <a class="btn" href="{% url 'generate_monthly_salary' employee.pk %}">Generate Monthly Salary</a>
+    </p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Month/Year</th>
+                <th>Gross Amount</th>
+                <th>Net Amount</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for salary in monthly_salaries %}
+                <tr>
+                    <td>{{ salary.month }}/{{ salary.year }}</td>
+                    <td>{{ salary.gross_amount }}</td>
+                    <td>{{ salary.net_amount }}</td>
+                    <td><a href="{% url 'monthly_salary_detail' salary.pk %}">View</a></td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="4">No monthly salary records found.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <p><a href="{% url 'employee_list' %}">Back to Employee List</a></p>
+</body>
+</html>

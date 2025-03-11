@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Employee List</title>
+    <style>
+        ul { list-style-type: none; padding: 0; }
+        li { margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Employee List</h1>
+    <ul>
+        {% for employee in employees %}
+            <li>
+                <a href="{% url 'employee_detail' employee.pk %}">
+                    {{ employee.name }} ({{ employee.employee_id }})
+                </a>
+            </li>
+        {% empty %}
+            <li>No employees found.</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
