@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ employee.name }} - Old Salary Structures</title>
+    {% include 'payroll/styles.html' %}
+</head>
+<body>
+    <h1>Old Salary Structures for {{ employee.name }}</h1>
+    {% if old_salary_structures %}
+    <table border="1">
+        <tr>
+            <th>Effective Date</th>
+            <th>End Date</th>
+            <th>Basic Pay</th>
+            <th>Description</th>
+        </tr>
+        {% for ss in old_salary_structures %}
+        <tr>
+            <td>{{ ss.effective_date }}</td>
+            <td>{{ ss.end_date }}</td>
+            <td>{{ ss.basic_pay }}</td>
+            <td>{{ ss.description }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p>No old salary structures available.</p>
+    {% endif %}
+    <p><a href="{% url 'employee_detail' employee.employee_id %}">Back to Employee Detail</a></p>
+</body>
+</html>

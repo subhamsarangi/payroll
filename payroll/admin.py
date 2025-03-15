@@ -4,9 +4,6 @@ from .models import (
     BankAccount,
     SalaryComponent,
     SalaryStructure,
-    SalaryStructureLine,
-    MonthlySalary,
-    MonthlySalaryLine,
 )
 
 
@@ -37,38 +34,8 @@ class BankAccountAdmin(admin.ModelAdmin):
 
 @admin.register(SalaryComponent)
 class SalaryComponentAdmin(admin.ModelAdmin):
-    list_display = ("name", "code", "component_type", "is_percentage")
+    list_display = ("name", "code", "component_type", "mode")
     search_fields = ("name", "code")
 
 
-class SalaryStructureLineInline(admin.TabularInline):
-    model = SalaryStructureLine
-    extra = 0
-
-
-@admin.register(SalaryStructure)
-class SalaryStructureAdmin(admin.ModelAdmin):
-    list_display = ("employee", "effective_date", "is_active")
-    list_filter = ("is_active", "effective_date")
-    search_fields = ("employee__name",)
-    inlines = [SalaryStructureLineInline]
-
-
-class MonthlySalaryLineInline(admin.TabularInline):
-    model = MonthlySalaryLine
-    extra = 0
-
-
-@admin.register(MonthlySalary)
-class MonthlySalaryAdmin(admin.ModelAdmin):
-    list_display = (
-        "employee",
-        "month",
-        "year",
-        "gross_amount",
-        "net_amount",
-        "created_at",
-    )
-    list_filter = ("year", "month")
-    search_fields = ("employee__name",)
-    inlines = [MonthlySalaryLineInline]
+admin.site.register(SalaryStructure)

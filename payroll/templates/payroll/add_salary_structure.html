@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Salary Structure for {{ employee.name }} ({{ employee.employee_id }})</title>
+    {% include 'payroll/styles.html' %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Add Salary Structure for {{ employee.name }} ({{ employee.employee_id }})</h1>
+    {% if active_salary_structure %}
+    <h2 style="cursor: pointer;" onclick="toggleSalaryStructure()">Current Active Salary Structure &#x25BE;</h2>
+    <div id="activeSalaryDetails" style="display: none;">
+        <table border="2">
+            <tr>
+                <th>Effective Date</th>
+                <th>End Date</th>
+                <th>Basic Pay</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>{{ active_salary_structure.effective_date }}</td>
+                <td>{{ active_salary_structure.end_date }}</td>
+                <td>{{ active_salary_structure.basic_pay }}</td>
+                <td>{{ active_salary_structure.description }}</td>
+            </tr>
+        </table>
+        <table border="1">
+            <tr>
+                <th>Component</th>
+                <th>Amount</th>
+            </tr>
+            {% for line in active_salary_structure.lines.all %}
+            <tr>
+                <td>{{ line.salary_component.name }}</td>
+                {% if line.salary_component.component_type == "earning" %}
+                <td style="color: green;">{{ line.amount }}</td>
+                {% else %}
+                <td style="color: crimson;">{{ line.amount }}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </table>
+        <label>Gross Amount:</label>
+        <span id="gross_salary">{{active_gross_salary|floatformat:2}}</span>
+        <br>
+        <label>Net Amount:</label>
+        <span id="net_salary">{{active_net_salary|floatformat:2}}</span>
+        {% endif %}
+        <br>
+        <hr>
+        <br>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <label>Effective Date:</label>
+        <input type="date" name="effective_date" value="{{ data.effective_date|default:'' }}">
+        {% if errors.effective_date %}<span>{{ errors.effective_date }}</span>{% endif %}
+        <br>
+        <label>End Date:</label>
+        <input type="date" name="end_date" value="{{ data.end_date|default:'' }}">
+        {% if errors.end_date %}<span>{{ errors.end_date }}</span>{% endif %}
+        <br>
+        <label>Basic Pay:</label>
+        <input type="number" step="0.01" name="basic_pay" id="basic_pay" value="{{ data.basic_pay|default:'' }}">
+        {% if errors.basic_pay %}<span>{{ errors.basic_pay }}</span>{% endif %}
+        <br>
+        <label>Description:</label>
+        <textarea name="description">{{ data.description|default:'' }}</textarea>
+        <br>
+        <table border="1">
+            <tr>
+                <th>Component</th>
+                <th>Type</th>
+                <th>Mode</th>
+                <th>Value</th>
+                <th>Calculated Amount</th>
+            </tr>
+            {% for comp in components %}
+            <tr>
+                <td>{{ comp.name }}</td>
+                {% if comp.component_type == "earning" %}
+                <td style="color: green;">{{ comp.component_type }}</td>
+                {% else %}
+                <td style="color: crimson;">{{ comp.component_type }}</td>
+                {% endif %}
+                <td>{{ comp.mode }}</td>
+                <td>
+                    <input type="number" step="0.01" name="component_{{ comp.id }}" class="component_value" data-mode="{{ comp.mode }}" value="{{ comp.value }}">
+                    {% if comp.action == "optional" %}
+                    <label class="switch">
+                        <input type="checkbox" class="toggle_optional" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="toggle-label">Optional</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="calculated_amount">0.00</span>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        <br>
+        <label>Gross Amount:</label>
+        <span id="gross_amount">0.00</span>
+        <br>
+        <label>Net Amount:</label>
+        <span id="net_amount">0.00</span>
+        <br>
+        <button type="submit" id="submit_btn" disabled>Submit</button>
+    </form>
+
+    <script>
+    function toggleSalaryStructure() {
+        var x = document.getElementById("activeSalaryDetails");
+        if (x.style.display === "none") {
+            x.style.display = "block";
+        } else {
+            x.style.display = "none";
+        }
+    }
+    function validateForm(){
+        var valid = true;
+        $("input[name='effective_date'], input[type='number']").each(function(){
+            if($(this).prop("disabled")){
+                return true;
+            }
+            if(!$(this).val()){
+                valid = false;
+            }
+        });
+        return valid;
+    }
+    function calculateAmounts(){
+        var basic = parseFloat($("#basic_pay").val()) || 0;
+        var gross = basic;
+        $(".component_value").each(function(){
+            var row = $(this).closest("tr");
+            var toggle = row.find(".toggle_optional");
+            if(toggle.length && !toggle.is(":checked")){
+                row.find(".calculated_amount").text("0.00");
+                return;
+            }
+            var mode = $(this).data("mode");
+            var val = parseFloat($(this).val()) || 0;
+            var calc = (mode.toLowerCase() == "percentage") ? (basic * val / 100) : val;
+            row.find(".calculated_amount").text(calc.toFixed(2));
+            gross += calc;
+        });
+        $("#gross_amount").text(gross.toFixed(2));
+        $("#net_amount").text(gross.toFixed(2));
+    }
+    $(document).ready(function(){
+        $("#basic_pay, .component_value, input[type='date']").on("input change", function(){
+            calculateAmounts();
+            if(validateForm()){
+                $("#submit_btn").prop("disabled", false);
+            } else {
+                $("#submit_btn").prop("disabled", true);
+            }
+        });
+        $(".toggle_optional").on("change", function(){
+            var input = $(this).closest("td").find(".component_value");
+            if(!$(this).is(":checked")){
+                input.prop("disabled", true).addClass("disabled");
+                $(this).closest("tr").find(".calculated_amount").text("0.00");
+            } else {
+                input.prop("disabled", false).removeClass("disabled");
+            }
+            calculateAmounts();
+        });
+    });
+    </script>
+</body>
+</html>

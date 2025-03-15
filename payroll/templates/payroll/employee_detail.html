@@ -2,87 +2,56 @@
 <html>
 <head>
     <title>{{ employee.name }} - Details</title>
-    <style>
-        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
-        th, td { border: 1px solid #000; padding: 5px; text-align: left; vertical-align: top; }
-        .btn {
-            display: inline-block;
-            padding: 5px 10px;
-            background: #007BFF;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 3px;
-            margin-bottom: 10px;
-        }
-        ul { list-style-type: none; padding: 0; margin: 0; }
-    </style>
+    {% include 'payroll/styles.html' %}
 </head>
 <body>
     <h1>{{ employee.name }} ({{ employee.employee_id }})</h1>
+    <a href="{% url 'add_salary_structure' employee.employee_id %}">Add Salary Structure</a>
     
-    <h2>Salary Structure History</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Effective Date</th>
-                <th>Description</th>
-                <th>Status</th>
-                <th>Components</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for structure in salary_structures %}
-                <tr>
-                    <td>{{ structure.effective_date }}</td>
-                    <td>{{ structure.description|default:"-" }}</td>
-                    <td>{% if structure.is_active %}Active{% else %}Inactive{% endif %}</td>
-                    <td>
-                        <ul>
-                        {% for line in structure.lines.all %}
-                            <li>{{ line.salary_component.name }}: {{ line.amount }}{% if line.salary_component.is_percentage %}%{% endif %}</li>
-                        {% endfor %}
-                        </ul>
-                    </td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="4">No salary structure records found.</td>
-                </tr>
-            {% endfor %}
-        </tbody>
+    {% if active_salary_structure %}
+    <h2>Current Active Salary Structure</h2>
+    <table border="2">
+        <tr>
+            <th>Effective Date</th>
+            <th>End Date</th>
+            <th>Basic Pay</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>{{ active_salary_structure.effective_date }}</td>
+            <td>{{ active_salary_structure.end_date }}</td>
+            <td>{{ active_salary_structure.basic_pay }}</td>
+            <td>{{ active_salary_structure.description }}</td>
+        </tr>
     </table>
-    
-    <h2>Monthly Salaries</h2>
-    <!-- Button to generate monthly salary -->
-    <p>
-        <a class="btn" href="{% url 'generate_monthly_salary' employee.pk %}">Generate Monthly Salary</a>
-    </p>
-    
-    <table>
-        <thead>
-            <tr>
-                <th>Month/Year</th>
-                <th>Gross Amount</th>
-                <th>Net Amount</th>
-                <th>Details</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for salary in monthly_salaries %}
-                <tr>
-                    <td>{{ salary.month }}/{{ salary.year }}</td>
-                    <td>{{ salary.gross_amount }}</td>
-                    <td>{{ salary.net_amount }}</td>
-                    <td><a href="{% url 'monthly_salary_detail' salary.pk %}">View</a></td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="4">No monthly salary records found.</td>
-                </tr>
-            {% endfor %}
-        </tbody>
+    <table border="1">
+        <tr>
+            <th>Component</th>
+            <th>Amount</th>
+        </tr>
+        {% for line in active_salary_structure.lines.all %}
+        <tr>
+            <td>{{ line.salary_component.name }}</td>
+            {% if line.salary_component.component_type == "earning" %}
+            <td style="color: green;">{{ line.amount }}</td>
+            {% else %}
+            <td style="color: crimson;">{{ line.amount }}</td>
+            {% endif %}
+        </tr>
+        {% endfor %}
     </table>
-    
+    <label>Gross Amount:</label>
+    <span id="gross_salary">{{gross_salary|floatformat:2}}</span>
+    <br>
+    <label>Net Amount:</label>
+    <span id="net_salary">{{net_salary|floatformat:2}}</span>
+    {% endif %}
+
+    <br><hr>
+
+    {% if old_salary_structures %}
+    <a href="{% url 'old_salary_structures' employee.employee_id %}">View Old Salary Structures</a>
+    {% endif %}
     <p><a href="{% url 'employee_list' %}">Back to Employee List</a></p>
 </body>
 </html>
