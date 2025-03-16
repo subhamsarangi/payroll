@@ -112,28 +112,27 @@ class SalaryStructure(models.Model):
         super().save(*args, **kwargs)
 
     def calculate_component_amounts(self):
-        calculated = {}
+        """Calculate individual component amounts based on mode (fixed or percentage)."""
+        calculated = {"earnings": 0, "deductions": 0}
         for line in self.lines.all():
             if line.salary_component.mode == SalaryComponent.PERCENTAGE:
-                calculated_amount = self.basic_pay * line.amount / 100
+                amount = self.basic_pay * line.amount / 100
             else:
-                calculated_amount = line.amount
-            calculated[line.salary_component.code] = calculated_amount
+                amount = line.amount
+
+            if line.salary_component.component_type == SalaryComponent.EARNING:
+                calculated["earnings"] += amount
+            else:
+                calculated["deductions"] += amount
         return calculated
 
     def gross_salary(self):
-        """Calculate the gross salary by summing up the basic pay and all positive components."""
-        total_components = sum(self.calculate_component_amounts().values())
-        return self.basic_pay + total_components
+        """Gross Salary = Basic Pay + Earnings."""
+        return self.basic_pay + self.calculate_component_amounts()["earnings"]
 
     def net_salary(self):
-        """Calculate the net salary by subtracting any deductions from the gross salary."""
-        total_deductions = sum(
-            line.amount
-            for line in self.lines.all()
-            if line.salary_component.mode == SalaryComponent.DEDUCTION
-        )
-        return self.gross_salary() - total_deductions
+        """Net Salary = Gross Salary - Deductions."""
+        return self.gross_salary() - self.calculate_component_amounts()["deductions"]
 
 
 class SalaryStructureLine(models.Model):
